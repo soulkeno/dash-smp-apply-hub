@@ -20,7 +20,18 @@ serve(async (req) => {
       throw new Error("Webhook URL not configured");
     }
 
-    const { application } = await req.json();
+    const { discordUsername, application } = await req.json();
+
+    // Validate Discord username
+    if (!discordUsername || typeof discordUsername !== "string" || discordUsername.trim().length < 3) {
+      return new Response(
+        JSON.stringify({ error: "Discord username must be at least 3 characters" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
 
     // Validate application
     if (!application || typeof application !== "string") {
@@ -50,7 +61,18 @@ serve(async (req) => {
       embeds: [
         {
           title: "📝 New Dash SMP Application",
-          description: application.trim(),
+          fields: [
+            {
+              name: "Discord Username",
+              value: discordUsername.trim(),
+              inline: true,
+            },
+            {
+              name: "Application",
+              value: application.trim(),
+              inline: false,
+            },
+          ],
           color: 0x808080, // Gray color to match theme
           footer: {
             text: "Dash SMP Application System",

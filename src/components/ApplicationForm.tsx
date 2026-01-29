@@ -1,24 +1,30 @@
 import { useState } from "react";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Send } from "lucide-react";
 
 const MIN_CHARACTERS = 100;
+const MIN_USERNAME_LENGTH = 3;
 
 interface ApplicationFormProps {
   onSuccess: () => void;
 }
 
 export const ApplicationForm = ({ onSuccess }: ApplicationFormProps) => {
+  const [discordUsername, setDiscordUsername] = useState("");
   const [application, setApplication] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   const characterCount = application.length;
-  const isValid = characterCount >= MIN_CHARACTERS;
+  const isUsernameValid = discordUsername.trim().length >= MIN_USERNAME_LENGTH;
+  const isApplicationValid = characterCount >= MIN_CHARACTERS;
+  const isValid = isUsernameValid && isApplicationValid;
   const remainingChars = MIN_CHARACTERS - characterCount;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -30,7 +36,10 @@ export const ApplicationForm = ({ onSuccess }: ApplicationFormProps) => {
 
     try {
       const { error } = await supabase.functions.invoke("submit-application", {
-        body: { application: application.trim() },
+        body: { 
+          discordUsername: discordUsername.trim(),
+          application: application.trim() 
+        },
       });
 
       if (error) {
@@ -64,8 +73,33 @@ export const ApplicationForm = ({ onSuccess }: ApplicationFormProps) => {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Discord Username */}
           <div className="space-y-2">
+            <Label htmlFor="discord-username" className="text-foreground">
+              Discord Username
+            </Label>
+            <Input
+              id="discord-username"
+              value={discordUsername}
+              onChange={(e) => setDiscordUsername(e.target.value)}
+              placeholder="Enter your Discord username"
+              className="bg-input/50 border-border/50 focus:border-primary/50 transition-all duration-300 text-foreground placeholder:text-muted-foreground"
+              disabled={isSubmitting}
+            />
+            {discordUsername.length > 0 && !isUsernameValid && (
+              <span className="text-sm text-muted-foreground">
+                At least {MIN_USERNAME_LENGTH} characters required
+              </span>
+            )}
+          </div>
+
+          {/* Application Text */}
+          <div className="space-y-2">
+            <Label htmlFor="application" className="text-foreground">
+              Your Application
+            </Label>
             <Textarea
+              id="application"
               value={application}
               onChange={(e) => setApplication(e.target.value)}
               placeholder="Tell us about yourself! Why do you want to join Dash SMP? What's your Minecraft experience? What makes you a great addition to our community?..."
